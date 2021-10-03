@@ -6,14 +6,17 @@ import numpy as np
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import WeightNorm
 
+affine_state = False
+
 def init_layer(L):
     # Initialization using fan-in
     if isinstance(L, nn.Conv2d):
         n = L.kernel_size[0]*L.kernel_size[1]*L.out_channels
         L.weight.data.normal_(0,math.sqrt(2.0/float(n)))
     elif isinstance(L, nn.BatchNorm2d):
-        L.weight.data.fill_(1)
-        L.bias.data.fill_(0)
+        if affine_state:
+            L.weight.data.fill_(1)
+            L.bias.data.fill_(0)
 
 class Flatten(nn.Module):
     def __init__(self):
@@ -25,16 +28,17 @@ class Flatten(nn.Module):
 # Simple ResNet Block
 class SimpleBlock(nn.Module):
     maml = False #Default
+    affine_state = False
     def __init__(self, indim, outdim, half_res):
         super(SimpleBlock, self).__init__()
         self.indim = indim
         self.outdim = outdim
 
         self.C1 = nn.Conv2d(indim, outdim, kernel_size=3, stride=2 if half_res else 1, padding=1, bias=False)
-        self.BN1 = nn.BatchNorm2d(outdim)
+        self.BN1 = nn.BatchNorm2d(outdim, affine = affine_state)
     
         self.C2 = nn.Conv2d(outdim, outdim,kernel_size=3, padding=1,bias=False)
-        self.BN2 = nn.BatchNorm2d(outdim)
+        self.BN2 = nn.BatchNorm2d(outdim, affine = affine_state)
 
         self.relu1 = nn.ReLU(inplace=True)
         self.relu2 = nn.ReLU(inplace=True)
@@ -47,7 +51,7 @@ class SimpleBlock(nn.Module):
         if indim!=outdim:
 
             self.shortcut = nn.Conv2d(indim, outdim, 1, 2 if half_res else 1, bias=False)
-            self.BNshortcut = nn.BatchNorm2d(outdim)
+            self.BNshortcut = nn.BatchNorm2d(outdim, affine = affine_state)
 
             self.parametrized_layers.append(self.shortcut)
             self.parametrized_layers.append(self.BNshortcut)
@@ -79,11 +83,11 @@ class BottleneckBlock(nn.Module):
         self.outdim = outdim
 
         self.C1 = nn.Conv2d(indim, bottleneckdim, kernel_size=1,  bias=False)
-        self.BN1 = nn.BatchNorm2d(bottleneckdim)
+        self.BN1 = nn.BatchNorm2d(bottleneckdim, affine = affine_state)
         self.C2 = nn.Conv2d(bottleneckdim, bottleneckdim, kernel_size=3, stride=2 if half_res else 1,padding=1)
-        self.BN2 = nn.BatchNorm2d(bottleneckdim)
+        self.BN2 = nn.BatchNorm2d(bottleneckdim, affine = affine_state)
         self.C3 = nn.Conv2d(bottleneckdim, outdim, kernel_size=1, bias=False)
-        self.BN3 = nn.BatchNorm2d(outdim)
+        self.BN3 = nn.BatchNorm2d(outdim, affine = affine_state)
 
         self.relu = nn.ReLU()
         self.parametrized_layers = [self.C1, self.BN1, self.C2, self.BN2, self.C3, self.BN3]
@@ -122,6 +126,7 @@ class BottleneckBlock(nn.Module):
 
 
 class ResNet(nn.Module):
+    affine_state = False
     def __init__(self,block,list_of_num_layers, list_of_out_dims, flatten = False):
         # list_of_num_layers specifies number of layers in each stage
         # list_of_out_dims specifies number of output channel for each stage
@@ -130,7 +135,7 @@ class ResNet(nn.Module):
 
         conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                            bias=False)
-        bn1 = nn.BatchNorm2d(64)
+        bn1 = nn.BatchNorm2d(64, affine = affine_state)
 
         relu = nn.ReLU()
         pool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
