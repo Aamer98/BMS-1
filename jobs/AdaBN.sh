@@ -62,7 +62,7 @@ echo "---------------------------------------<Run the program>------------------
 date +"%T"
 cd $SLURM_TMPDIR
 
-cd BMS
+cd BMS-1
 
 target_testset="EuroSAT"
 for target_testset in "ChestX" "ISIC" "EuroSAT" "CropDisease"
