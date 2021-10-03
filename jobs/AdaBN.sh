@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --mail-user=Moslem.Yazdanpanah@gmail.com
+#SBATCH --mail-user=ar.aamer@gmail.com
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
@@ -22,7 +22,7 @@ echo "------------------------------------< Data preparation>-------------------
 echo "Copying the source code"
 date +"%T"
 cd $SLURM_TMPDIR
-cp -r ~/scratch/BMS .
+cp -r ~/scratch/BMS-1 .
 
 echo "Copying the datasets"
 date +"%T"
@@ -76,4 +76,4 @@ date +"%T"
 echo "--------------------------------------<backup the result>-----------------------------------"
 date +"%T"
 cd $SLURM_TMPDIR
-cp -r $SLURM_TMPDIR/BMS/logs/AdaBN/ ~/scratch/BMS/logs/
+cp -r $SLURM_TMPDIR/BMS-1/logs/AdaBN/ ~/scratch/BMS-1/logs/
